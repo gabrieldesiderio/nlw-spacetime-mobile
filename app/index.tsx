@@ -1,7 +1,9 @@
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session'
 import { useEffect } from 'react'
-import { api } from './src/lib/api'
+import { api } from '../src/lib/api'
+import { styled } from 'nativewind'
 import * as SecureStore from 'expo-secure-store'
+import { useRouter } from 'expo-router'
 
 import { StatusBar } from 'expo-status-bar'
 import { ImageBackground, Text, TouchableOpacity, View } from 'react-native'
@@ -14,10 +16,9 @@ import {
 
 import { BaiJamjuree_700Bold } from '@expo-google-fonts/bai-jamjuree'
 
-import blurBg from './src/assets/bg-blur.png'
-import Stripes from './src/assets/stripes.svg'
-import NLWLogo from './src/assets/nlw-spacetime-logo.svg'
-import { styled } from 'nativewind'
+import blurBg from '../src/assets/bg-blur.png'
+import Stripes from '../src/assets/stripes.svg'
+import NLWLogo from '../src/assets/nlw-spacetime-logo.svg'
 
 const StyledStripes = styled(Stripes)
 
@@ -28,14 +29,16 @@ const discovery = {
     'https://github.com/settings/connections/applications/9ddce40fbfeef7a3a7f6',
 }
 
-export default function App() {
+export default function Index() {
+  const router = useRouter()
+
   const [hasLoadedFonts] = useFonts({
     Roboto_400Regular,
     Roboto_700Bold,
     BaiJamjuree_700Bold,
   })
 
-  const [request, response, signInWithGithub] = useAuthRequest(
+  const [, response, signInWithGithub] = useAuthRequest(
     {
       clientId: '9ddce40fbfeef7a3a7f6',
       scopes: ['identity'],
@@ -45,6 +48,18 @@ export default function App() {
     },
     discovery,
   )
+
+  async function handleGithubOAuthCode(code) {
+    const response = await api.post('/register', {
+      code,
+    })
+
+    const { token } = response.data
+
+    await SecureStore.setItemAsync('token', token)
+
+    router.push('memories')
+  }
 
   useEffect(() => {
     // console.log(
@@ -56,18 +71,7 @@ export default function App() {
     if (response?.type === 'success') {
       const { code } = response.params
 
-      api
-        .post('/register', {
-          code,
-        })
-        .then((response) => {
-          const { token } = response.data
-
-          SecureStore.setItemAsync('token', token)
-        })
-        .catch((err) => {
-          console.error(err)
-        })
+      handleGithubOAuthCode(code)
     }
   }, [response])
 
