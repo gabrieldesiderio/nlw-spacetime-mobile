@@ -40,8 +40,6 @@ export default function Memories() {
       },
     })
 
-    console.log(response.data)
-
     setMemories(response.data)
   }
 
